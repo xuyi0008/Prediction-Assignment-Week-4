@@ -1,0 +1,70 @@
+---
+title: "Prediction Assignment Week 4"
+output: html_document
+---
+##Prediction Assignment Week 4
+
+##Background: Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement – a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://web.archive.org/web/20161224072740/http:/groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset).
+
+##Data Source: The training data for this project are available here - https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+##The test data are available here:https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+##The data for this project come from this source: http://web.archive.org/web/20161224072740/http:/groupware.les.inf.puc-rio.br/har
+
+```{r}
+library(lattice)
+library(ggplot2)
+library(caret)
+library(randomForest)
+library(rpart)
+library(ROCR)
+```
+
+##Loading/Preparing Data
+```{r}
+setwd("~/Coursera/Chap 8 Week 4")
+set.seed(1111)
+TrainData<- read.csv("pml-training.csv", na.strings=c("NA","#DIV/0!", ""))
+TestData <- read.csv("pml-testing.csv", na.strings=c("NA","#DIV/0!", ""))
+
+TrainData<-TrainData[,-c(1:7)]
+TestData <-TestData[,-c(1:7)]
+
+TrainData1 <- createDataPartition(y=TrainData$classe,p=.70,list=F)
+Training <- TrainData[TrainData1,]
+Testing <- TrainData[-TrainData1,]
+```
+
+##To predict the manner each activity will be done; Method 1: Decision Tree
+```{r}
+DecisionTree <- rpart(classe ~ ., data=Training, method="class")
+prediction1 <- predict(DecisionTree, Testing, type = "class")
+```
+
+## Plot the Decision Tree
+```{r}
+rpart.plot(DecisionTree, main="Classification Tree", extra=102, under=TRUE, faclen=0)
+```
+
+## To test results on the data set:
+```{r}
+confusionMatrix(prediction1, Testing$classe)
+```
+
+##To predict the manner each activity will be done; Method 2: Random Forest
+```{r}
+RandomForest <- randomForest(classe ~. , data=Training, method="class")
+prediction2 <- predict(RandomForest, Testing, type = "class")
+```
+
+## To test results on the data set:
+```{r}
+confusionMatrix(prediction2, Testing$classe)
+```
+
+##In conclusion, the Random Forest prediction model fared better than the Decision Tree prediction model as the accuracy for the former is 0.995 (95% CI: (0.993, 0.997)), vs that of the latter at 0.739 (95% CI: (0.727, 0.752)). As such, the Random Forest prediction model is used and has an error of 0.005, or 0.5%.
+
+##Applying the Random Forest prediction model on test data
+```{r}
+TestPredict <- predict(RandomForest, TestData, type="class")
+TestPredict
+```
